@@ -5,8 +5,6 @@ import dotenv from "dotenv"
 import joi from 'joi'
 import dayjs from "dayjs";
 
-
-
 dotenv.config()
 
 const app = express();
@@ -46,8 +44,8 @@ app.post('/participants', async (req, res) => {
         await db.collection("participants").insertOne({ name: user.name, lastStatus: Date.now() })
 
         await db.collection("messages").insertOne({
-            to: user.name,
-            from: 'Todos',
+            from: user.name,
+            to: 'Todos',
             text: 'entra na sala...',
             type: 'status',
             time: dayjs().format("hh:mm:ss")
@@ -61,12 +59,22 @@ app.post('/participants', async (req, res) => {
 
 })
 
-app.get('participants', (req, res) => {
-
+app.get('/participants', async(req, res) => {
+    try{
+        const participants = await db.collection("participants").find().toArray()
+        res.send(participants)
+    }catch{
+        res.sendStatus(500)
+    }
 })
 
 app.post('/messages', (req, res) => {
 
+})
+
+app.get('/messages', async(req, res) => {
+    const mensagens = await db.collection("messages").find().toArray()
+    res.send(mensagens)
 })
 
 app.post('/status', (req, res) => {
