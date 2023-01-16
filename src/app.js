@@ -59,20 +59,53 @@ app.post('/participants', async (req, res) => {
 
 })
 
-app.get('/participants', async(req, res) => {
-    try{
+app.get('/participants', async (req, res) => {
+    try {
         const participants = await db.collection("participants").find().toArray()
         res.send(participants)
-    }catch{
+    } catch {
         res.sendStatus(500)
     }
 })
 
-app.post('/messages', (req, res) => {
+app.post('/messages', async (req, res) => {
+    const msg = req.body
+    const { user } = req.headers
 
+    const verificarUsuario = await db.collection("participants").findOne({ name: user })
+    if (!verificarUsuario) {
+        return res.sendStatus(422)
+    }
+
+    const msgSchema = joi.object({
+        to: joi.string()
+            .min(1)
+            .required(),
+        text: joi.string()
+            .min(1)
+            .required(),
+        type: joi.string().valid('message', 'private_message').required()
+    })
+    const validacao = msgSchema.validate(msg)
+    if (validacao.error) {
+        return res.sendStatus(422)
+    }
+
+    await db.collection("messages").insertOne({
+        from:user,
+        to:msg.to,
+        text:msg.text,
+        type:msg.type,
+        time:dayjs().format("hh:mm:ss")
+    })
+    return res.sendStatus(201)
+
+    
 })
 
-app.get('/messages', async(req, res) => {
+
+
+app.get('/messages', async (req, res) => {
     const mensagens = await db.collection("messages").find().toArray()
     res.send(mensagens)
 })
