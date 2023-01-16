@@ -116,17 +116,29 @@ app.get('/messages', async (req, res) => {
     const minhasMsg = ([...msgPublicas, ...msgEnviadas, ...msgPrivadas])
 
     const msgReverse = [...minhasMsg].reverse()
-    
+
     if (limit) {
         const ultimasMsg = msgReverse.slice(0, parseInt(limit))
         return res.send(ultimasMsg)
     }
-    
+
     res.send(minhasMsg)
 })
 
-app.post('/status', (req, res) => {
+app.post('/status', async (req, res) => {
+    const { user } = req.headers
 
+    const participantes = await db.collection("participants").findOne({ name: user })
+
+    if (!participantes) {
+        return res.sendStatus(404)
+    }
+ 
+    await db.collection('participants').updateOne({ name: user }, { $set: { lastStatus: Date.now() } })
+
+
+
+    res.sendStatus(200)
 })
 
 
