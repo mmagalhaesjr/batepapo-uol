@@ -118,6 +118,9 @@ app.get('/messages', async (req, res) => {
     const msgReverse = [...minhasMsg].reverse()
 
     if (limit) {
+        if (limit <= 0 || isNaN(limit)) {
+            return res.sendStatus(422)
+        }
         const ultimasMsg = msgReverse.slice(0, parseInt(limit))
         return res.send(ultimasMsg)
     }
@@ -133,13 +136,36 @@ app.post('/status', async (req, res) => {
     if (!participantes) {
         return res.sendStatus(404)
     }
- 
+
     await db.collection('participants').updateOne({ name: user }, { $set: { lastStatus: Date.now() } })
 
 
 
     res.sendStatus(200)
 })
+
+setInterval(async () => {
+    const timeStampAtual = Date.now()
+    const participantes = await db.collection('participants').find().toArray()
+
+    const usuariosInativos = participantes.map(p => (timeStampAtual - p.lastStatus) >= 10000)
+
+if(usuariosInativos.length > 0){
+    usuariosInativos.map((u) => {
+        db.collection("participants").deleteOne({name: u.name})
+        db.collection('messages').insertOne(
+            {
+                from: u.name,
+                to: 'Todos',
+                text: 'sai da sala...',
+                type: 'status',
+                time: dayjs().format("hh:mm:ss")
+            }
+        )
+    })
+}
+    
+}, 15000)
 
 
 app.listen(PORTA, () => {
