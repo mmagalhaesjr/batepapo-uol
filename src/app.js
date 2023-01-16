@@ -147,13 +147,12 @@ app.post('/status', async (req, res) => {
 setInterval(async () => {
     const timeStampAtual = Date.now()
     const participantes = await db.collection('participants').find().toArray()
-
-    const usuariosInativos = participantes.map(p => (timeStampAtual - p.lastStatus) >= 10000)
+    const usuariosInativos = participantes.filter(p => (timeStampAtual - p.lastStatus) >= 10000)
 
 if(usuariosInativos.length > 0){
-    usuariosInativos.map((u) => {
-        db.collection("participants").deleteOne({name: u.name})
-        db.collection('messages').insertOne(
+    usuariosInativos.map(async (u) => {
+       await db.collection("participants").deleteOne({name: u.name})
+        await db.collection('messages').insertOne(
             {
                 from: u.name,
                 to: 'Todos',
