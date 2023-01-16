@@ -92,22 +92,37 @@ app.post('/messages', async (req, res) => {
     }
 
     await db.collection("messages").insertOne({
-        from:user,
-        to:msg.to,
-        text:msg.text,
-        type:msg.type,
-        time:dayjs().format("hh:mm:ss")
+        from: user,
+        to: msg.to,
+        text: msg.text,
+        type: msg.type,
+        time: dayjs().format("hh:mm:ss")
     })
-    return res.sendStatus(201)
+    res.sendStatus(201)
 
-    
+
 })
 
-
-
 app.get('/messages', async (req, res) => {
-    const mensagens = await db.collection("messages").find().toArray()
-    res.send(mensagens)
+    const { limit } = req.query;
+    const { user } = req.headers
+
+    const msgPublicas = await db.collection('messages').find({ to: 'Todos' }).toArray()
+
+    const msgPrivadas = await db.collection('messages').find({ to: user }).toArray()
+
+    const msgEnviadas = await db.collection('messages').find({ from: user, type: 'private_message' }).toArray()
+
+    const minhasMsg = ([...msgPublicas, ...msgEnviadas, ...msgPrivadas])
+
+    const msgReverse = [...minhasMsg].reverse()
+    
+    if (limit) {
+        const ultimasMsg = msgReverse.slice(0, parseInt(limit))
+        return res.send(ultimasMsg)
+    }
+    
+    res.send(minhasMsg)
 })
 
 app.post('/status', (req, res) => {
